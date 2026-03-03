@@ -6,3 +6,4 @@ from healthapp.models import *
 
 admin.site.register(patient)
 admin.site.register(Myappointment)
+admin.site.register(Transaction)
