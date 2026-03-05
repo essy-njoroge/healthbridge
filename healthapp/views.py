@@ -1,73 +1,70 @@
-import json
-
-import requests
-from django.shortcuts import render, redirect, get_object_or_404, HttpResponse
+from django.shortcuts import render,redirect,get_object_or_404,HttpResponse
 from healthapp.models import *
+import json
+import requests
 from requests.auth import HTTPBasicAuth
 from healthapp.credentials import MpesaAccessToken, LipanaMpesaPpassword
+from django.contrib import messages
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, login
+
 # Create your views here.
 def home(request):
-    return render(request, 'index.html')
-
+    return render(request,'index.html')
 
 def starter(request):
-    return render(request, 'starter-page.html')
-
+    return render(request,'starter-page.html')
 
 def about(request):
-    return render(request, 'about.html')
-
+    return render(request,'about.html')
 
 def appointment(request):
     if request.method == 'POST':
         all = Myappointment(
-            name=request.POST['name'],
-            email=request.POST['email'],
-            phone=request.POST['phone'],
-            datetime=request.POST['datetime'],
-            department=request.POST['department'],
-            doctor=request.POST['doctor'],
-            message=request.POST['message']
+            name = request.POST['name'],
+            email = request.POST['email'],
+            phone = request.POST['phone'],
+            datetime = request.POST['datetime'],
+            department = request.POST['department'],
+            doctor = request.POST['doctor'],
+            message = request.POST['message']
         )
         all.save()
-        return render(request, 'appointment.html')
+        return render(request,'appointment.html')
 
 
     else:
-        return render(request, 'appointment.html')
-
-
+         return render(request,'appointment.html')
+     
+     
 def show(request):
-    allappointment = Myappointment.objects.all()
-    return render(request, 'show.html', {'allappointment': allappointment})
-
-
-def delete(request, id):
+   allappointment = Myappointment.objects.all()
+   return render(request,'show.html',{'allappointment': allappointment})
+    
+def delete(request,id):
     deleteappointment = Myappointment.objects.get(id=id)
     deleteappointment.delete()
-    return redirect('/show')
+    return redirect('/show') 
 
-
-def edit(request, id):
-    editappointment = get_object_or_404(Myappointment, id=id)
-
+def edit(request,id):
+    editappointment = get_object_or_404(Myappointment,id=id)
+    
     if request.method == 'POST':
-        editappointment.name = request.POST.get('name')
-        editappointment.email = request.POST.get('email')
-        editappointment.phone = request.POST.get('phone')
-        editappointment.datetime = request.POST.get('datetime')
-        editappointment.department = request.POST.get('department')
-        editappointment.doctor = request.POST.get('doctor')
-        editappointment.message = request.POST.get('message')
-
+        editappointment.name= request.POST.get('name')
+        editappointment.email= request.POST.get('email')
+        editappointment.phone= request.POST.get('phone')
+        editappointment.datetime= request.POST.get('datetime')
+        editappointment.department= request.POST.get('department')
+        editappointment.doctor= request.POST.get('doctor')
+        editappointment.message= request.POST.get('message')
+        
         editappointment.save()
         return redirect('/show')
-
+        
     else:
-        return render(request, 'edit.html', {'editappointment': editappointment})
+        return render(request,'edit.html',{'editappointment' : editappointment})
     
-
-    #mpesa views
+#mpesa views
 
 def token(request):
     consumer_key = '77bgGpmlOxlgJu6oEXhEgUgnu0j2WYxA'
@@ -198,3 +195,56 @@ def transactions_list(request):
     # Only show successfully completed transactions
     transactions = Transaction.objects.filter(status="Success").order_by('-date')
     return render(request, 'transactions.html', {'transactions': transactions})
+
+def register(request):
+        if request.method == 'POST':
+         username = request.POST['username']
+         password = request.POST['password']
+         confirm_password = request.POST['confirm_password']
+
+        # Check the password
+         if password == confirm_password:
+            try:
+                user = User.objects.create_user(username=username, password=password)
+                user.save()
+
+                # Display a message
+                messages.success(request, "Account created successfully")
+                return redirect('/loggin')
+            except:
+                # Display a message if the above fails
+                messages.error(request, "Username already exist")
+        else:
+            # Display a message saying passwords don't match
+            messages.error(request, "Passwords do not match")
+
+        return render(request, 'register.html')
+
+
+    
+
+def loggin_user(request):
+        if request.method == "POST":
+           username = request.POST['username']
+           password = request.POST['password']
+
+           user = authenticate(request, username=username, password=password)
+
+        # Check if the user exists
+           if user is not None:
+            # login(request, user)
+            login(request,user)
+            messages.success(request, "You are now logged in!")
+            # Admin
+            if user.is_superuser:
+                return redirect('/show')
+
+            # For Normal Users
+            return redirect('/home')
+        else:
+            messages.error(request, "Invalid login credentials")
+
+        return render(request, 'login.html')
+
+
+    
